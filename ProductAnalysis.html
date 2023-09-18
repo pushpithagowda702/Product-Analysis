@@ -13,22 +13,14 @@
             font-size: 30px;
         }
     </style>
-
 </head>
 
 <body class="container-fluid">
     <h2 class="text-center">Product Rating Analyzer</h2>
 
-    <div class="d-flex flex-wrap" id="acceptUsr">
-        <form onsubmit="return false" id="acceptUsrForm">
-            <div class="mb-3">
-                <label class="form-label h3 text-muted">Enter Number of Users:</label>
-                <input type="number" min="1" max="10" name="usr" id="usr" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <input type="submit" value="Submit" onclick="rateProduct(this.form);"
-                    class="btn btn-success form-control">
-            </div>
+    <div class="d-flex flex-wrap">
+        <form id="myForm">
+
         </form>
     </div>
 
@@ -36,54 +28,134 @@
 
 
     </div>
+    <div class="container text-center mx-3 my-4">
+      <p>
+        <a href="#" class="btn btn-primary" onclick="sortProducts();">Sort</a>
+      </p>
+    </div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            rateProduct(document.getElementById("myForm"));
+        });
+
+        var productRatings = [];
 
         function rateProduct(form) {
-
             let product = "";
-            let color = ["warning", "danger", "info", "secondary", "primary"], bg;
-            usr = form.usr.value;
-
-            if (usr < 1 || usr > 10)
-                return false;
+            let color = ["warning", "danger", "info", "secondary", "primary"];
 
             for (let i = 1; i <= 5; i++) {
-                bg = color[i - 1];
+                let bg = color[i - 1];
                 product += `
                 <div class="card me-4" style="width: 19rem;">
                     <div class="bg bg-${bg} h3 text-white text-center p-5">Product ${i}</div>
                     <div class="card-body">
-                        <h5 class="card-title">User Ratings</h5>`;
-                for (let j = 1; j <= usr; j++) {
-                    product += `
+                        <h5 class="card-title">User Ratings</h5>
                         <p class="card-text">
                             <div class="star-rating">
-                                <span class="star" id="s1" onclick="countFill(1);">&#9733;</span>
-                                <span class="star" id="s2" onclick="countFill(2);">&#9733;</span>
-                                <span class="star" id="s4" onclick="countFill(4);">&#9733;</span>
-                                <span class="star" id="s3" onclick="countFill(3);">&#9733;</span>
-                                <span class="star" id="s5" onclick="countFill(5);">&#9733;</span>
+                                <span class="star" id="s${i}_1" onclick="countFill(${i}, 1);">&#9733;</span>
+                                <span class="star" id="s${i}_2" onclick="countFill(${i}, 2);">&#9733;</span>
+                                <span class="star" id="s${i}_3" onclick="countFill(${i}, 3);">&#9733;</span>
+                                <span class="star" id="s${i}_4" onclick="countFill(${i}, 4);">&#9733;</span>
+                                <span class="star" id="s${i}_5" onclick="countFill(${i}, 5);">&#9733;</span>
                             </div>
-                        </p>`;
-                }
-                product += `<a href="#" class="btn btn-primary">Submit</a>
+                        </p>
+                        <p class="card-text">Rating: <span id="rating${i}">0</span></p>
+                        <p class="card-text">User Count: <span id="userCount${i}">0</span></p>
+                        <a href="#" class="btn btn-primary" onclick="userCount(${i});">Submit</a>
                     </div>
                 </div>`;
             }
 
-            document.getElementById("rateProduct").innerHTML = product;
 
+            document.getElementById("rateProduct").innerHTML = product;
         }
 
-        function countFill(st) {
-            for (let i = parseInt(st); i > 0; i--) {
-                    document.getElementById("s" + i).style.color = "red";
+        function countFill(productNum, st) {
+            let ratingSpan = document.getElementById(`rating${productNum}`);
+            productRatings.push({ productNum, rating: 0, user: 0 });
+
+            for (let i = 1; i <= 5; i++) {
+                let star = document.getElementById(`s${productNum}_${i}`);
+                if (i <= st) {
+                    star.style.color = "red";
+                } else {
+                    star.style.color = "black";
+                }
+            }
+            productRatings[productNum - 1].rating = st;
+            ratingSpan.innerHTML = st;
+            
+        }
+
+        function userCount(productNum) {
+            productRatings[productNum - 1].user++;
+            document.getElementById(`userCount${productNum}`).innerHTML = productRatings[productNum - 1].user;
+        }
+
+        function merge(arr, left, mid, right) {
+            let n1 = mid - left + 1;
+            let n2 = right - mid;
+
+            let leftArr = new Array(n1);
+            let rightArr = new Array(n2);
+
+            for (let i = 0; i < n1; i++) {
+                leftArr[i] = arr[left + i];
+            }
+            for (let i = 0; i < n2; i++) {
+                rightArr[i] = arr[mid + 1 + i];
+            }
+
+            let i = 0, j = 0, k = left;
+
+            while (i < n1 && j < n2) {
+                if (leftArr[i].rating >= rightArr[j].rating) {
+                    arr[k] = leftArr[i];
+                    i++;
+                } else {
+                    arr[k] = rightArr[j];
+                    j++;
+                }
+                k++;
+            }
+
+            while (i < n1) {
+                arr[k] = leftArr[i];
+                i++;
+                k++;
+            }
+
+            while (j < n2) {
+                arr[k] = rightArr[j];
+                j++;
+                k++;
             }
         }
 
+        function mergeSort(arr, left, right) {
+            if (left < right) {
+                let mid = Math.floor((left + right) / 2);
 
+                mergeSort(arr, left, mid);
+                mergeSort(arr, mid + 1, right);
 
+                merge(arr, left, mid, right);
+            }
+        }
+
+        function sortProducts() {
+            mergeSort(productRatings, 0, productRatings.length - 1);
+
+            let sortedProductHTML = "";
+            for (let i = 0; i < productRatings.length; i++) {
+                let sortedProductNumber = productRatings[i].productNum;
+                sortedProductHTML += document.getElementById(`rating${sortedProductNumber}`).parentNode.parentNode.parentNode.outerHTML;
+            }
+
+            document.getElementById("rateProduct").innerHTML = sortedProductHTML;
+        }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
